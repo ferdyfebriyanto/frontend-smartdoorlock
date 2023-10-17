@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HistoryController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,7 +17,43 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::redirect('/', '/dashboard-general-dashboard');
+// Route::middleware(['auth', 'admin'])->group(function () {
+
+    // Route::redirect('/', '/dashboard-general-dashboard');
+    Route::get('/', [DashboardController::class, 'index']);
+    Route::get('/video-stream', [DashboardController::class, 'getVideoStream']);
+
+    // crud data
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/user/{id}', [UserController::class, 'getDataById']);
+    Route::get('/users/create', [UserController::class, 'showCreateForm']);
+    Route::post('/user-create-data', [UserController::class, 'createData']);
+    Route::put('/user/{id}/edit', [UserController::class, 'updateData']);
+    Route::delete('/user/{id}/delete', [UserController::class, 'deleteData']);
+    Route::post('/user/upload', [UserController::class, 'upload']);
+
+    Route::get('/history', [HistoryController::class, 'index']);
+
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login-process', [AuthController::class, 'loginProcess'])->name('login.process');
+    Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
+// });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Dashboard
 Route::get('/dashboard-general-dashboard', function () {
