@@ -6,10 +6,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Uploadcare;
+use App\Services\StorageService;
 
 class UserController extends Controller
 {
-    function tesLog(Request $request){
+    protected $storageService;
+
+    public function __construct(StorageService $storageService)
+    {
+        $this->storageService = $storageService;
+    }
+
+    public function tesLog(Request $request)
+    {
         // dd("Msauk");
         // $on_page = is_null($request->get('page')) ? 1 : $request->get('page');
 
@@ -18,7 +27,7 @@ class UserController extends Controller
         $data = $res->json()['data'];
         dd($data);
 
-        if($res -> successful()){
+        if ($res -> successful()) {
             $data = $res->json();
             return response()->json($data);
         } else {
@@ -28,7 +37,8 @@ class UserController extends Controller
     }
 
 
-    function index(){
+    public function index()
+    {
         // dd("Msauk");
         // $on_page = is_null($request->get('page')) ? 1 : $request->get('page');
 
@@ -40,67 +50,76 @@ class UserController extends Controller
 
     }
 
-    function getDataById($id){
+    public function getDataById($id)
+    {
         $response = Http::get('http://127.0.0.1:5000/users/'.$id);
-    
+
         if ($response->successful()) {
             $data = $response['data'];
             return view('pages.users.detail', ['data' => $data]);
         } else {
             // Tangani jika terjadi kesalahan saat mengambil data berdasarkan ID
             return response()->json(['message' => 'Gagal mengambil data yyyyyyy'], $response->status());
-    }
+        }
     }
 
-    function showCreateForm(){
-        
+    public function showCreateForm()
+    {
+
         return view('pages.users.create');
     }
 
 
-    function createData(Request $request)
+    public function createData(Request $request)
     {
-    $data = $request->all();
-        
-    $file = $request->file('image');
-    $pubKey = '448aa6eb11abd3614ce5';
-        
-    $response = Http::attach(
-        'file', file_get_contents($file), $file->getClientOriginalName()
-    )->post('https://upload.uploadcare.com/base/', [
-        'UPLOADCARE_PUB_KEY' => $pubKey,
-    ]);
-        
+        $data = $request->all();
 
-    // Lanjutkan dengan membuat data baru jika validasi berhasil
-    $response = Http::post('http://127.0.0.1:5000/users', [
-        "email"=> $data['email'],
-        "name"=> $data['name'],
-        "password"=> "12345678",
-        "phone"=> $data['phone'],
-        "job"=> $data['job'],
-        "superUser"=> false,
-        "salary"=> "7600000",
-        "isAbsen"=> false,
-        "jobType"=> "admin",
-        "idCompany"=> "645d2c8130b6c222770feffb",
-        "image"=> 'https://ucarecdn.com/'. $response->json()['file'] . '/',
-        "verify"=> true,
-        "idCategory"=> "6496be23fdee481e5ee54c1d"
-    ]);
+        // $file = $request->file('image');
+        // $pubKey = '448aa6eb11abd3614ce5';
+
+        // $response = Http::attach(
+        //     'file', file_get_contents($file), $file->getClientOriginalName()
+        // )->post('https://upload.uploadcare.com/base/', [
+        //     'UPLOADCARE_PUB_KEY' => $pubKey,
+        // ]);
 
 
-    if ($response->successful()) {
-        // Tangani jika berhasil membuat data baru
-        return redirect('/users')->with('success', 'Data berhasil dibuat');
-    } else {
-        // Tangani jika terjadi kesalahan saat membuat data baru
-        return back()->with('error', 'Gagal membuat data');
+        $file = $request->file('image');
+        $contents = $file->get();
+
+        $filePath = 'images/' . time() . '_' . $file->getClientOriginalName();
+        $path = $this->storageService->upload($contents, $filePath);
+
+
+        // Lanjutkan dengan membuat data baru jika validasi berhasil
+        $response = Http::post('http://127.0.0.1:5000/users', [
+            "email" => $data['email'],
+            "name" => $data['name'],
+            "password" => "12345678",
+            "phone" => $data['phone'],
+            "job" => $data['job'],
+            "superUser" => false,
+            "salary" => "7600000",
+            "isAbsen" => false,
+            "jobType" => "admin",
+            "idCompany" => "645d2c8130b6c222770feffb",
+            "image" => $path,
+            "verify" => true,
+            "idCategory" => "6496be23fdee481e5ee54c1d"
+        ]);
+
+
+        if ($response->successful()) {
+            // Tangani jika berhasil membuat data baru
+            return redirect('/users')->with('success', 'Data berhasil dibuat');
+        } else {
+            // Tangani jika terjadi kesalahan saat membuat data baru
+            return back()->with('error', 'Gagal membuat data');
+        }
     }
-    }
 
 
-    function testRespons(Request $request)
+    public function testRespons(Request $request)
     {
         $data = $request->all();
 
@@ -108,10 +127,11 @@ class UserController extends Controller
     }
 
 
-    function deleteData($id){
+    public function deleteData($id)
+    {
         $response = Http::delete('http://127.0.0.1:5000/users/'.$id);
 
-        if($response->successful()) {
+        if ($response->successful()) {
             // Tangani jika berhasil menghapus data
             return redirect('/users')->with('success', 'Data berhasil dihapus');
         } else {
@@ -120,37 +140,40 @@ class UserController extends Controller
         }
     }
 
-    function updateData($id, Request $request){
+    public function updateData($id, Request $request)
+    {
         // $data = $request->all();
         // $response = Http::put('http://127.0.0.1:5000/users/'.$id, $data);
 
-         // Mengambil file yang diunggah
+        // Mengambil file yang diunggah
         $file = $request->file('image');
-    
+
         $pubKey = '448aa6eb11abd3614ce5';
 
-        
+
         $response = Http::attach(
-            'file', file_get_contents($file), $file->getClientOriginalName()
+            'file',
+            file_get_contents($file),
+            $file->getClientOriginalName()
         )->post('https://upload.uploadcare.com/base/', [
             'UPLOADCARE_PUB_KEY' => $pubKey,
         ]);
 
-         // Lanjutkan dengan membuat data baru jika validasi berhasil
+        // Lanjutkan dengan membuat data baru jika validasi berhasil
         $response = Http::put('http://127.0.0.1:5000/users/'. $id, [
-        "email"=> $request->input('email'),
-        "name"=> $request->input('name'),
-        "password"=> "12345678",
-        "phone"=> $request->input('phone'),
-        "job"=> $request->input('job'),
-        "superUser"=> false,
-        "salary"=> "7600000",
-        "isAbsen"=> false,
-        "jobType"=> "remote",
-        "idCompany"=> "645d2c8130b6c222770feffb",
-        "image"=> 'https://ucarecdn.com/'. $response->json()['file'] . '/',
-        "verify"=> true,
-        "idCategory"=> "6496be23fdee481e5ee54c1d"
+        "email" => $request->input('email'),
+        "name" => $request->input('name'),
+        "password" => "12345678",
+        "phone" => $request->input('phone'),
+        "job" => $request->input('job'),
+        "superUser" => false,
+        "salary" => "7600000",
+        "isAbsen" => false,
+        "jobType" => "remote",
+        "idCompany" => "645d2c8130b6c222770feffb",
+        "image" => 'https://ucarecdn.com/'. $response->json()['file'] . '/',
+        "verify" => true,
+        "idCategory" => "6496be23fdee481e5ee54c1d"
     ]);
 
 
@@ -167,14 +190,16 @@ class UserController extends Controller
     {
         $file = $request->file('file');
         $pubKey = '448aa6eb11abd3614ce5';
-        
+
         $response = Http::attach(
-            'file', file_get_contents($file), $file->getClientOriginalName()
+            'file',
+            file_get_contents($file),
+            $file->getClientOriginalName()
         )->post('https://upload.uploadcare.com/base/', [
             'UPLOADCARE_PUB_KEY' => $pubKey,
         ]);
-        
-    return dd($response->json());
+
+        return dd($response->json());
     }
 
 

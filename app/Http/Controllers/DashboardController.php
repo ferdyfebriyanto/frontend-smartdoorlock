@@ -8,18 +8,19 @@ use LengthException;
 
 class DashboardController extends Controller
 {
-    function index(){
+    public function index()
+    {
         try {
             $response = Http::get('http://127.0.0.1:5000/users');
 
             $data = $response->json()['data'];
 
-        if($response -> successful()){
-            $data = $response->json();
-            return view('pages.dashboard.index', ['totalUsers' => count($data['data'])]);
-        } else {
-            return response()->json(['message' => 'Error'], $response->status());
-        }
+            if($response -> successful()) {
+                $data = $response->json();
+                return view('pages.dashboard.index', ['totalUsers' => count($data['data'])]);
+            } else {
+                return response()->json(['message' => 'Error'], $response->status());
+            }
         } catch (\Exception $e) {
             return dd($e);
         }
